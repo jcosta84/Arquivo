@@ -1938,6 +1938,7 @@ class ArquivoDigitalApp(ctk.CTk):
 
     def editar_utilizador_tree(self, tree):
         selecionado = tree.selection()
+
         if not selecionado:
             self.mensagem_aviso(
                 "Seleção",
@@ -1945,7 +1946,36 @@ class ArquivoDigitalApp(ctk.CTk):
             )
             return
 
-        self.editar_utilizador(int(selecionado[0]))
+        # Obter os valores da linha selecionada
+        valores = tree.item(
+            selecionado[0],
+            "values"
+        )
+
+        if not valores:
+            self.mensagem_aviso(
+                "Seleção",
+                "Não foi possível obter os dados do utilizador."
+            )
+            return
+
+        try:
+            # O ID está na primeira coluna da tabela
+            usuario_id = int(valores[0])
+
+        except (
+            ValueError,
+            TypeError,
+            IndexError
+        ):
+            self.mensagem_erro(
+                "Erro",
+                "O ID do utilizador selecionado é inválido."
+            )
+            return
+
+        # Abrir o utilizador correto
+        self.editar_utilizador(usuario_id)
 
     def editar_utilizador(self, usuario_id):
         dados_user = fetch_one(
