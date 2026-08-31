@@ -1,6 +1,6 @@
 import getpass
 
-from auth import hash_password
+from Arquivo_3.auth import hash_password
 from db import execute
 
 

@@ -7,8 +7,8 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from auth import autenticar
-from auth import hash_password
+from Arquivo_3.auth import autenticar
+from Arquivo_3.auth import hash_password
 
 from db import get_connection
 from db import fetch_all

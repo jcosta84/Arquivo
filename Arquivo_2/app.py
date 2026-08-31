@@ -7,6 +7,7 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 
 from auth import autenticar, hash_password, verify_password
+##from db import get_connection, fetch_all, fetch_one, execute
 from db import get_connection, fetch_all, fetch_one, execute
 
 
@@ -2221,7 +2222,7 @@ elif (
 
                 else:
 
-                    from auth import verify_password
+                    from Arquivo_3.auth import verify_password
 
                     senha_valida = verify_password(
                         senha_atual,
