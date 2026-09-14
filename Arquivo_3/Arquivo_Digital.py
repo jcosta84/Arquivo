@@ -5,7 +5,7 @@ import subprocess
 from datetime import date
 from pathlib import Path
 from io import BytesIO
-
+import tempfile
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
@@ -628,6 +628,7 @@ class ArquivoDigitalApp(ctk.CTk):
     def mostrar_novo_documento(self):
         self.pagina_atual = "Novo documento"
         self.limpar_conteudo()
+
         self.titulo_pagina(
             "➕ Arquivar documento",
             "Adicionar um novo documento ao arquivo"
@@ -654,118 +655,353 @@ class ArquivoDigitalApp(ctk.CTk):
             )
             return
 
-        dep_map = {x["nome"]: x["id"] for x in departamentos}
-        tipo_map = {x["nome"]: x["id"] for x in tipos}
+        dep_map = {
+            x["nome"]: x["id"]
+            for x in departamentos
+        }
+
+        tipo_map = {
+            x["nome"]: x["id"]
+            for x in tipos
+        }
 
         scroll = self.criar_scroll()
 
-        card = ctk.CTkFrame(scroll, corner_radius=12)
-        card.pack(fill="x", padx=10, pady=5)
+        card = ctk.CTkFrame(
+            scroll,
+            corner_radius=12
+        )
 
-        referencia = gerar_nova_referencia(date.today().year)
+        card.pack(
+            fill="x",
+            padx=10,
+            pady=5
+        )
+
+        card.grid_columnconfigure(0, weight=1)
+        card.grid_columnconfigure(1, weight=1)
+
+        # =====================================================
+        # REFERÊNCIA
+        # =====================================================
+
+        referencia = gerar_nova_referencia(
+            date.today().year
+        )
 
         self.novo_referencia = referencia
 
         ctk.CTkLabel(
             card,
             text="Referência / Nº do documento"
-        ).grid(row=0, column=0, sticky="w", padx=20, pady=(20, 5))
+        ).grid(
+            row=0,
+            column=0,
+            sticky="w",
+            padx=20,
+            pady=(20, 5)
+        )
 
         self.entry_referencia = ctk.CTkEntry(
             card,
             height=38
         )
+
         self.entry_referencia.grid(
-            row=1, column=0, sticky="ew", padx=20, pady=(0, 15)
+            row=1,
+            column=0,
+            sticky="ew",
+            padx=20,
+            pady=(0, 15)
         )
-        self.entry_referencia.insert(0, referencia)
-        self.entry_referencia.configure(state="disabled")
+
+        self.entry_referencia.insert(
+            0,
+            referencia
+        )
+
+        self.entry_referencia.configure(
+            state="disabled"
+        )
+
+        # =====================================================
+        # TÍTULO
+        # =====================================================
 
         ctk.CTkLabel(
             card,
             text="Título *"
-        ).grid(row=0, column=1, sticky="w", padx=20, pady=(20, 5))
-
-        self.entry_titulo = ctk.CTkEntry(card, height=38)
-        self.entry_titulo.grid(
-            row=1, column=1, sticky="ew", padx=20, pady=(0, 15)
+        ).grid(
+            row=0,
+            column=1,
+            sticky="w",
+            padx=20,
+            pady=(20, 5)
         )
+
+        self.entry_titulo = ctk.CTkEntry(
+            card,
+            height=38,
+            placeholder_text="Título do documento"
+        )
+
+        self.entry_titulo.grid(
+            row=1,
+            column=1,
+            sticky="ew",
+            padx=20,
+            pady=(0, 15)
+        )
+
+        # =====================================================
+        # REGIÃO
+        # =====================================================
+
+        ctk.CTkLabel(
+            card,
+            text="Região *"
+        ).grid(
+            row=2,
+            column=0,
+            sticky="w",
+            padx=20,
+            pady=(5, 5)
+        )
+
+        self.combo_regiao = ctk.CTkComboBox(
+            card,
+            values=[
+                "NORTE",
+                "SUL"
+            ],
+            height=38
+        )
+
+        self.combo_regiao.grid(
+            row=3,
+            column=0,
+            sticky="ew",
+            padx=20,
+            pady=(0, 15)
+        )
+
+        self.combo_regiao.set("NORTE")
+
+        # =====================================================
+        # NIF
+        # =====================================================
+
+        ctk.CTkLabel(
+            card,
+            text="NIF"
+        ).grid(
+            row=2,
+            column=1,
+            sticky="w",
+            padx=20,
+            pady=(5, 5)
+        )
+
+        self.entry_nif = ctk.CTkEntry(
+            card,
+            height=38,
+            placeholder_text="Número de Identificação Fiscal"
+        )
+
+        self.entry_nif.grid(
+            row=3,
+            column=1,
+            sticky="ew",
+            padx=20,
+            pady=(0, 15)
+        )
+
+        # =====================================================
+        # DEPARTAMENTO
+        # =====================================================
 
         ctk.CTkLabel(
             card,
             text="Departamento *"
-        ).grid(row=2, column=0, sticky="w", padx=20, pady=(5, 5))
+        ).grid(
+            row=4,
+            column=0,
+            sticky="w",
+            padx=20,
+            pady=(5, 5)
+        )
 
         self.combo_departamento = ctk.CTkComboBox(
             card,
             values=list(dep_map.keys()),
             height=38
         )
+
         self.combo_departamento.grid(
-            row=3, column=0, sticky="ew", padx=20, pady=(0, 15)
+            row=5,
+            column=0,
+            sticky="ew",
+            padx=20,
+            pady=(0, 15)
         )
-        self.combo_departamento.set(list(dep_map.keys())[0])
+
+        self.combo_departamento.set(
+            list(dep_map.keys())[0]
+        )
+
+        # =====================================================
+        # TIPO DE DOCUMENTO
+        # =====================================================
 
         ctk.CTkLabel(
             card,
             text="Tipo de documento *"
-        ).grid(row=2, column=1, sticky="w", padx=20, pady=(5, 5))
+        ).grid(
+            row=4,
+            column=1,
+            sticky="w",
+            padx=20,
+            pady=(5, 5)
+        )
 
         self.combo_tipo = ctk.CTkComboBox(
             card,
             values=list(tipo_map.keys()),
             height=38
         )
+
         self.combo_tipo.grid(
-            row=3, column=1, sticky="ew", padx=20, pady=(0, 15)
+            row=5,
+            column=1,
+            sticky="ew",
+            padx=20,
+            pady=(0, 15)
         )
-        self.combo_tipo.set(list(tipo_map.keys())[0])
+
+        self.combo_tipo.set(
+            list(tipo_map.keys())[0]
+        )
+
+        # =====================================================
+        # DATA
+        # =====================================================
 
         ctk.CTkLabel(
             card,
             text="Data do documento *"
-        ).grid(row=4, column=0, sticky="w", padx=20, pady=(5, 5))
+        ).grid(
+            row=6,
+            column=0,
+            sticky="w",
+            padx=20,
+            pady=(5, 5)
+        )
 
         self.entry_data = ctk.CTkEntry(
             card,
             height=38,
             placeholder_text="AAAA-MM-DD"
         )
+
         self.entry_data.grid(
-            row=5, column=0, sticky="ew", padx=20, pady=(0, 15)
+            row=7,
+            column=0,
+            sticky="ew",
+            padx=20,
+            pady=(0, 15)
         )
-        self.entry_data.insert(0, date.today().isoformat())
+
+        self.entry_data.insert(
+            0,
+            date.today().isoformat()
+        )
+
+        # =====================================================
+        # ASSUNTO
+        # =====================================================
 
         ctk.CTkLabel(
             card,
             text="Assunto"
-        ).grid(row=4, column=1, sticky="w", padx=20, pady=(5, 5))
-
-        self.entry_assunto = ctk.CTkEntry(card, height=38)
-        self.entry_assunto.grid(
-            row=5, column=1, sticky="ew", padx=20, pady=(0, 15)
+        ).grid(
+            row=6,
+            column=1,
+            sticky="w",
+            padx=20,
+            pady=(5, 5)
         )
+
+        self.entry_assunto = ctk.CTkEntry(
+            card,
+            height=38,
+            placeholder_text="Assunto do documento"
+        )
+
+        self.entry_assunto.grid(
+            row=7,
+            column=1,
+            sticky="ew",
+            padx=20,
+            pady=(0, 15)
+        )
+
+        # =====================================================
+        # DESCRIÇÃO
+        # =====================================================
 
         ctk.CTkLabel(
             card,
             text="Descrição / Observações"
-        ).grid(row=6, column=0, columnspan=2, sticky="w", padx=20, pady=(5, 5))
-
-        self.text_descricao = ctk.CTkTextbox(card, height=120)
-        self.text_descricao.grid(
-            row=7, column=0, columnspan=2,
-            sticky="ew", padx=20, pady=(0, 15)
+        ).grid(
+            row=8,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            padx=20,
+            pady=(5, 5)
         )
+
+        self.text_descricao = ctk.CTkTextbox(
+            card,
+            height=120
+        )
+
+        self.text_descricao.grid(
+            row=9,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            padx=20,
+            pady=(0, 15)
+        )
+
+        # =====================================================
+        # FICHEIRO
+        # =====================================================
 
         ctk.CTkLabel(
             card,
             text="Ficheiro *"
-        ).grid(row=8, column=0, sticky="w", padx=20, pady=(5, 5))
+        ).grid(
+            row=10,
+            column=0,
+            sticky="w",
+            padx=20,
+            pady=(5, 5)
+        )
 
-        ficheiro_frame = ctk.CTkFrame(card, fg_color="transparent")
+        ficheiro_frame = ctk.CTkFrame(
+            card,
+            fg_color="transparent"
+        )
+
         ficheiro_frame.grid(
-            row=9, column=0, columnspan=2,
-            sticky="ew", padx=20, pady=(0, 20)
+            row=11,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            padx=20,
+            pady=(0, 20)
         )
 
         self.label_ficheiro = ctk.CTkLabel(
@@ -773,29 +1009,43 @@ class ArquivoDigitalApp(ctk.CTk):
             text="Nenhum ficheiro selecionado.",
             anchor="w"
         )
+
         self.label_ficheiro.pack(
-            side="left", fill="x", expand=True
+            side="left",
+            fill="x",
+            expand=True
         )
 
         ctk.CTkButton(
             ficheiro_frame,
             text="📁 Selecionar ficheiro",
             command=self.selecionar_ficheiro
-        ).pack(side="right")
+        ).pack(
+            side="right"
+        )
 
-        card.grid_columnconfigure(0, weight=1)
-        card.grid_columnconfigure(1, weight=1)
+        # =====================================================
+        # MAPAS E FICHEIRO
+        # =====================================================
 
         self.dep_map_novo = dep_map
         self.tipo_map_novo = tipo_map
         self.ficheiro_selecionado = None
+
+        # =====================================================
+        # BOTÃO GUARDAR
+        # =====================================================
 
         ctk.CTkButton(
             scroll,
             text="💾 Guardar no arquivo",
             height=44,
             command=self.guardar_documento
-        ).pack(anchor="e", padx=10, pady=15)
+        ).pack(
+            anchor="e",
+            padx=10,
+            pady=15
+        )
 
     def selecionar_ficheiro(self):
         tipos = [
@@ -821,14 +1071,45 @@ class ArquivoDigitalApp(ctk.CTk):
             )
 
     def guardar_documento(self):
+    # =====================================================
+    # OBTER DADOS DO FORMULÁRIO
+    # =====================================================
+
         titulo = self.entry_titulo.get().strip()
         assunto = self.entry_assunto.get().strip()
         descricao = self.text_descricao.get("1.0", "end").strip()
         referencia = self.novo_referencia
         data_texto = self.entry_data.get().strip()
 
+        # Região
+        regiao = self.combo_regiao.get().strip().upper()
+
+        # NIF
+        nif = self.entry_nif.get().strip()
+
+        # =====================================================
+        # VALIDAÇÕES
+        # =====================================================
+
         if not titulo:
-            self.mensagem_erro("Validação", "O título é obrigatório.")
+            self.mensagem_erro(
+                "Validação",
+                "O título é obrigatório."
+            )
+            return
+
+        if not regiao:
+            self.mensagem_erro(
+                "Validação",
+                "A região é obrigatória."
+            )
+            return
+
+        if regiao not in ("NORTE", "SUL"):
+            self.mensagem_erro(
+                "Validação",
+                "A região deve ser NORTE ou SUL."
+            )
             return
 
         if not self.ficheiro_selecionado:
@@ -838,11 +1119,18 @@ class ArquivoDigitalApp(ctk.CTk):
             )
             return
 
+        # =====================================================
+        # VALIDAR DATA
+        # =====================================================
+
         try:
             from datetime import datetime
+
             data_documento = datetime.strptime(
-                data_texto, "%Y-%m-%d"
+                data_texto,
+                "%Y-%m-%d"
             ).date()
+
         except ValueError:
             self.mensagem_erro(
                 "Data inválida",
@@ -850,13 +1138,26 @@ class ArquivoDigitalApp(ctk.CTk):
             )
             return
 
+        # =====================================================
+        # PREPARAR FICHEIRO
+        # =====================================================
+
         try:
-            conteudo = Path(self.ficheiro_selecionado).read_bytes()
             caminho = Path(self.ficheiro_selecionado)
 
-            hash_sha256 = hashlib.sha256(conteudo).hexdigest()
+            conteudo = caminho.read_bytes()
+
+            hash_sha256 = hashlib.sha256(
+                conteudo
+            ).hexdigest()
+
             extensao = caminho.suffix.lower().lstrip(".")
+
             mime_type = self.obter_mime(caminho)
+
+            # =================================================
+            # GUARDAR NA BASE DE DADOS
+            # =================================================
 
             conn = get_connection()
             cursor = conn.cursor()
@@ -867,11 +1168,13 @@ class ArquivoDigitalApp(ctk.CTk):
                     INSERT INTO documentos
                     (
                         referencia,
+                        regiao,
                         titulo,
                         assunto,
                         descricao,
                         departamento_id,
                         tipo_documento_id,
+                        nif,
                         data_documento,
                         ano,
                         mes,
@@ -885,53 +1188,74 @@ class ArquivoDigitalApp(ctk.CTk):
                     )
                     VALUES
                     (
-                        %s, %s, %s, %s, %s, %s, %s, %s,
-                        %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s
                     )
                     """,
                     (
-                        referencia,
-                        titulo,
-                        assunto or None,
-                        descricao or None,
-                        self.dep_map_novo[
+                        referencia,                         # 1
+                        regiao,                             # 2
+                        titulo,                             # 3
+                        assunto or None,                    # 4
+                        descricao or None,                  # 5
+                        self.dep_map_novo[                   # 6
                             self.combo_departamento.get()
                         ],
-                        self.tipo_map_novo[
+                        self.tipo_map_novo[                 # 7
                             self.combo_tipo.get()
                         ],
-                        data_documento,
-                        data_documento.year,
-                        data_documento.month,
-                        caminho.name,
-                        extensao or None,
-                        mime_type,
-                        len(conteudo),
-                        conteudo,
-                        hash_sha256,
-                        self.user["id"]
+                        nif or None,                        # 8
+                        data_documento,                     # 9
+                        data_documento.year,                # 10
+                        data_documento.month,               # 11
+                        caminho.name,                        # 12
+                        extensao or None,                   # 13
+                        mime_type,                          # 14
+                        len(conteudo),                      # 15
+                        conteudo,                           # 16
+                        hash_sha256,                        # 17
+                        self.user["id"]                     # 18
                     )
                 )
 
                 documento_id = cursor.lastrowid
+
                 conn.commit()
+
+                # =================================================
+                # REGISTAR NO HISTÓRICO
+                # =================================================
 
                 self.log(
                     "CRIAR_DOCUMENTO",
-                    f"Documento '{titulo}' arquivado com referência {referencia}.",
+                    (
+                        f"Documento '{titulo}' arquivado "
+                        f"com referência {referencia}, "
+                        f"região {regiao}"
+                    ),
                     documento_id
                 )
 
+                # =================================================
+                # MENSAGEM DE SUCESSO
+                # =================================================
+
                 self.mensagem_info(
                     "Sucesso",
-                    f"Documento {referencia} arquivado com sucesso!"
+                    (
+                        f"Documento {referencia} "
+                        f"arquivado com sucesso!\n\n"
+                        f"Região: {regiao}"
+                    )
                 )
 
+                # Voltar à pesquisa
                 self.mostrar_pesquisa()
 
             except Exception:
                 conn.rollback()
                 raise
+
             finally:
                 cursor.close()
                 conn.close()
@@ -973,85 +1297,309 @@ class ArquivoDigitalApp(ctk.CTk):
         tipo_map = {"Todos": None}
         tipo_map.update({x["nome"]: x["id"] for x in tipos})
 
-        filtro = ctk.CTkFrame(self.content, corner_radius=12)
-        filtro.pack(fill="x", padx=30, pady=5)
+        ##
+        # =========================================================
+        # ÁREA DE FILTROS
+        # =========================================================
 
-        ctk.CTkLabel(filtro, text="Pesquisar").grid(
-            row=0, column=0, sticky="w", padx=12, pady=(12, 4)
+        filtro = ctk.CTkFrame(
+            self.content,
+            corner_radius=12
         )
+
+        filtro.pack(
+            fill="x",
+            padx=30,
+            pady=5
+        )
+
+        # =========================================================
+        # CONFIGURAÇÃO DAS COLUNAS
+        # =========================================================
+
+        filtro.grid_columnconfigure(0, weight=2)
+        filtro.grid_columnconfigure(1, weight=1)
+        filtro.grid_columnconfigure(2, weight=1)
+        filtro.grid_columnconfigure(3, weight=1)
+        filtro.grid_columnconfigure(4, weight=1)
+        filtro.grid_columnconfigure(5, weight=0)
+
+        # =========================================================
+        # LINHA 1 - PESQUISA
+        # =========================================================
+
+        # ---------------------------------------------------------
+        # Pesquisar
+        # ---------------------------------------------------------
+
+        ctk.CTkLabel(
+            filtro,
+            text="Pesquisar"
+        ).grid(
+            row=0,
+            column=0,
+            sticky="w",
+            padx=12,
+            pady=(12, 4)
+        )
+
         self.pesquisa_texto = ctk.CTkEntry(
             filtro,
-            placeholder_text="Referência, título ou assunto"
-        )
-        self.pesquisa_texto.grid(
-            row=1, column=0, sticky="ew", padx=12, pady=(0, 12)
+            placeholder_text="Referência, título, assunto ou NIF"
         )
 
-        ctk.CTkLabel(filtro, text="Departamento").grid(
-            row=0, column=1, sticky="w", padx=12, pady=(12, 4)
+        self.pesquisa_texto.grid(
+            row=1,
+            column=0,
+            sticky="ew",
+            padx=12,
+            pady=(0, 12)
         )
+
+        # ---------------------------------------------------------
+        # Departamento
+        # ---------------------------------------------------------
+
+        ctk.CTkLabel(
+            filtro,
+            text="Departamento"
+        ).grid(
+            row=0,
+            column=1,
+            sticky="w",
+            padx=12,
+            pady=(12, 4)
+        )
+
         self.pesquisa_dep = ctk.CTkComboBox(
             filtro,
             values=list(dep_map.keys())
         )
+
         self.pesquisa_dep.grid(
-            row=1, column=1, sticky="ew", padx=12, pady=(0, 12)
+            row=1,
+            column=1,
+            sticky="ew",
+            padx=12,
+            pady=(0, 12)
         )
+
         self.pesquisa_dep.set("Todos")
 
-        ctk.CTkLabel(filtro, text="Tipo").grid(
-            row=0, column=2, sticky="w", padx=12, pady=(12, 4)
+        # ---------------------------------------------------------
+        # Tipo
+        # ---------------------------------------------------------
+
+        ctk.CTkLabel(
+            filtro,
+            text="Tipo"
+        ).grid(
+            row=0,
+            column=2,
+            sticky="w",
+            padx=12,
+            pady=(12, 4)
         )
+
         self.pesquisa_tipo = ctk.CTkComboBox(
             filtro,
             values=list(tipo_map.keys())
         )
+
         self.pesquisa_tipo.grid(
-            row=1, column=2, sticky="ew", padx=12, pady=(0, 12)
+            row=1,
+            column=2,
+            sticky="ew",
+            padx=12,
+            pady=(0, 12)
         )
+
         self.pesquisa_tipo.set("Todos")
 
-        anos = ["Todos"] + list(
-            range(date.today().year, 1990, -1)
+        # ---------------------------------------------------------
+        # Região
+        # ---------------------------------------------------------
+
+        ctk.CTkLabel(
+            filtro,
+            text="Região"
+        ).grid(
+            row=0,
+            column=3,
+            sticky="w",
+            padx=12,
+            pady=(12, 4)
         )
 
-        ctk.CTkLabel(filtro, text="Ano").grid(
-            row=2, column=0, sticky="w", padx=12, pady=(4, 4)
+        self.pesquisa_regiao = ctk.CTkComboBox(
+            filtro,
+            values=[
+                "Todos",
+                "NORTE",
+                "SUL"
+            ],
+            state="readonly"
         )
+
+        self.pesquisa_regiao.grid(
+            row=1,
+            column=3,
+            sticky="ew",
+            padx=12,
+            pady=(0, 12)
+        )
+
+        self.pesquisa_regiao.set("Todos")
+
+        # ---------------------------------------------------------
+        # NIF
+        # ---------------------------------------------------------
+
+        ctk.CTkLabel(
+            filtro,
+            text="NIF"
+        ).grid(
+            row=0,
+            column=4,
+            sticky="w",
+            padx=12,
+            pady=(12, 4)
+        )
+
+        self.pesquisa_nif = ctk.CTkEntry(
+            filtro,
+            placeholder_text="NIF do cliente"
+        )
+
+        self.pesquisa_nif.grid(
+            row=1,
+            column=4,
+            sticky="ew",
+            padx=12,
+            pady=(0, 12)
+        )
+
+        # =========================================================
+        # BOTÃO PESQUISAR
+        # =========================================================
+
+        
+        # =========================================================
+        # LINHA 2 - FILTROS ADICIONAIS
+        # =========================================================
+
+        # ---------------------------------------------------------
+        # Ano
+        # ---------------------------------------------------------
+
+        anos = ["Todos"] + list(
+            range(
+                date.today().year,
+                1990,
+                -1
+            )
+        )
+
+        ctk.CTkLabel(
+            filtro,
+            text="Ano"
+        ).grid(
+            row=2,
+            column=0,
+            sticky="w",
+            padx=12,
+            pady=(4, 4)
+        )
+
         self.pesquisa_ano = ctk.CTkComboBox(
             filtro,
-            values=[str(x) for x in anos]
+            values=[
+                str(x)
+                for x in anos
+            ]
         )
+
         self.pesquisa_ano.grid(
-            row=3, column=0, sticky="ew", padx=12, pady=(0, 12)
+            row=3,
+            column=0,
+            sticky="ew",
+            padx=12,
+            pady=(0, 12)
         )
+
         self.pesquisa_ano.set("Todos")
 
-        ctk.CTkLabel(filtro, text="Mês").grid(
-            row=2, column=1, sticky="w", padx=12, pady=(4, 4)
+        # ---------------------------------------------------------
+        # Mês
+        # ---------------------------------------------------------
+
+        ctk.CTkLabel(
+            filtro,
+            text="Mês"
+        ).grid(
+            row=2,
+            column=1,
+            sticky="w",
+            padx=12,
+            pady=(4, 4)
         )
+
         self.pesquisa_mes = ctk.CTkComboBox(
             filtro,
-            values=["Todos"] + [str(x) for x in range(1, 13)]
+            values=[
+                "Todos"
+            ] + [
+                str(x)
+                for x in range(1, 13)
+            ]
         )
+
         self.pesquisa_mes.grid(
-            row=3, column=1, sticky="ew", padx=12, pady=(0, 12)
+            row=3,
+            column=1,
+            sticky="ew",
+            padx=12,
+            pady=(0, 12)
         )
+
         self.pesquisa_mes.set("Todos")
 
-        ctk.CTkLabel(filtro, text="Máximo de resultados").grid(
-            row=2, column=2, sticky="w", padx=12, pady=(4, 4)
+        # ---------------------------------------------------------
+        # Máximo de resultados
+        # ---------------------------------------------------------
+
+        ctk.CTkLabel(
+            filtro,
+            text="Máximo de resultados"
+        ).grid(
+            row=2,
+            column=2,
+            sticky="w",
+            padx=12,
+            pady=(4, 4)
         )
+
         self.pesquisa_limite = ctk.CTkComboBox(
             filtro,
-            values=["25", "50", "100", "250"]
+            values=[
+                "25",
+                "50",
+                "100",
+                "250"
+            ]
         )
-        self.pesquisa_limite.grid(
-            row=3, column=2, sticky="ew", padx=12, pady=(0, 12)
-        )
-        self.pesquisa_limite.set("50")
 
-        for i in range(3):
+        self.pesquisa_limite.grid(
+            row=3,
+            column=2,
+            sticky="ew",
+            padx=12,
+            pady=(0, 12)
+        )
+
+        self.pesquisa_limite.set("50")
+        ##
+        for i in range(6):
             filtro.grid_columnconfigure(i, weight=1)
 
         ctk.CTkButton(
@@ -1084,6 +1632,8 @@ class ArquivoDigitalApp(ctk.CTk):
             SELECT
                 x.id,
                 x.referencia,
+                x.regiao,
+                x.nif,
                 x.titulo,
                 x.assunto,
                 d.nome AS departamento,
@@ -1104,68 +1654,180 @@ class ArquivoDigitalApp(ctk.CTk):
 
         parametros = []
 
+        # =====================================================
+        # PESQUISA POR TEXTO
+        # =====================================================
+
         texto = self.pesquisa_texto.get().strip()
+
         if texto:
             sql += """
                 AND (
                     x.referencia LIKE %s
                     OR x.titulo LIKE %s
                     OR x.assunto LIKE %s
+                    OR x.descricao LIKE %s
                 )
             """
-            pesquisa = f"%{texto}%"
-            parametros.extend([pesquisa, pesquisa, pesquisa])
 
-        dep_id = dep_map[self.pesquisa_dep.get()]
+            pesquisa = f"%{texto}%"
+
+            parametros.extend([
+                pesquisa,
+                pesquisa,
+                pesquisa,
+                pesquisa
+            ])
+
+        # =====================================================
+        # REGIÃO
+        # =====================================================
+
+        regiao = self.pesquisa_regiao.get().strip()
+
+        if regiao and regiao != "Todos":
+            sql += """
+                AND x.regiao = %s
+            """
+
+            parametros.append(regiao)
+
+        # =====================================================
+        # NIF
+        # =====================================================
+
+        nif = self.pesquisa_nif.get().strip()
+
+        if nif:
+            sql += """
+                AND x.nif LIKE %s
+            """
+
+            parametros.append(f"%{nif}%")
+
+        # =====================================================
+        # DEPARTAMENTO
+        # =====================================================
+
+        dep_id = dep_map.get(
+            self.pesquisa_dep.get()
+        )
+
         if dep_id:
-            sql += " AND x.departamento_id = %s"
+            sql += """
+                AND x.departamento_id = %s
+            """
+
             parametros.append(dep_id)
 
-        tipo_id = tipo_map[self.pesquisa_tipo.get()]
+        # =====================================================
+        # TIPO
+        # =====================================================
+
+        tipo_id = tipo_map.get(
+            self.pesquisa_tipo.get()
+        )
+
         if tipo_id:
-            sql += " AND x.tipo_documento_id = %s"
+            sql += """
+                AND x.tipo_documento_id = %s
+            """
+
             parametros.append(tipo_id)
 
+        # =====================================================
+        # ANO
+        # =====================================================
+
         ano = self.pesquisa_ano.get()
+
         if ano != "Todos":
-            sql += " AND x.ano = %s"
+            sql += """
+                AND x.ano = %s
+            """
+
             parametros.append(int(ano))
 
+        # =====================================================
+        # MÊS
+        # =====================================================
+
         mes = self.pesquisa_mes.get()
+
         if mes != "Todos":
-            sql += " AND x.mes = %s"
+            sql += """
+                AND x.mes = %s
+            """
+
             parametros.append(int(mes))
 
-        limite = int(self.pesquisa_limite.get())
+        # =====================================================
+        # LIMITE
+        # =====================================================
+
+        limite = int(
+            self.pesquisa_limite.get()
+        )
 
         sql += """
-            ORDER BY x.data_documento DESC, x.id DESC
+            ORDER BY
+                x.data_documento DESC,
+                x.id DESC
             LIMIT %s
         """
+
         parametros.append(limite)
 
+        # =====================================================
+        # EXECUTAR PESQUISA
+        # =====================================================
+
         try:
-            documentos = fetch_all(sql, tuple(parametros))
+            documentos = fetch_all(
+                sql,
+                tuple(parametros)
+            )
+
         except Exception as erro:
-            self.mensagem_erro("Erro na pesquisa", str(erro))
+            self.mensagem_erro(
+                "Erro na pesquisa",
+                str(erro)
+            )
             return
+
+        # =====================================================
+        # TOTAL DE RESULTADOS
+        # =====================================================
 
         ctk.CTkLabel(
             self.resultados_frame,
             text=f"{len(documentos)} documento(s) encontrado(s)",
             font=("Segoe UI", 15, "bold")
-        ).pack(anchor="w", padx=10, pady=(0, 8))
+        ).pack(
+            anchor="w",
+            padx=10,
+            pady=(0, 8)
+        )
 
         if not documentos:
             ctk.CTkLabel(
                 self.resultados_frame,
-                text="Nenhum processo encontrado."
-            ).pack(anchor="w", padx=10)
+                text="Nenhum documento encontrado."
+            ).pack(
+                anchor="w",
+                padx=10
+            )
             return
+
+        # =====================================================
+        # COLUNAS
+        # =====================================================
 
         colunas = [
             ("id", 60),
             ("referencia", 150),
+            ("regiao", 100),
+            ("nif", 130),
             ("titulo", 260),
             ("assunto", 200),
             ("departamento", 170),
@@ -1175,8 +1837,15 @@ class ArquivoDigitalApp(ctk.CTk):
             ("tamanho", 100),
         ]
 
-        frame = ctk.CTkFrame(self.resultados_frame)
-        frame.pack(fill="both", expand=True, padx=10)
+        frame = ctk.CTkFrame(
+            self.resultados_frame
+        )
+
+        frame.pack(
+            fill="both",
+            expand=True,
+            padx=10
+        )
 
         tree = ttk.Treeview(
             frame,
@@ -1189,51 +1858,134 @@ class ArquivoDigitalApp(ctk.CTk):
             orient="vertical",
             command=tree.yview
         )
+
         sx = ttk.Scrollbar(
             frame,
             orient="horizontal",
             command=tree.xview
         )
+
         tree.configure(
             yscrollcommand=sy.set,
             xscrollcommand=sx.set
         )
 
-        tree.grid(row=0, column=0, sticky="nsew")
-        sy.grid(row=0, column=1, sticky="ns")
-        sx.grid(row=1, column=0, sticky="ew")
+        tree.grid(
+            row=0,
+            column=0,
+            sticky="nsew"
+        )
 
-        frame.grid_rowconfigure(0, weight=1)
-        frame.grid_columnconfigure(0, weight=1)
+        sy.grid(
+            row=0,
+            column=1,
+            sticky="ns"
+        )
+
+        sx.grid(
+            row=1,
+            column=0,
+            sticky="ew"
+        )
+
+        frame.grid_rowconfigure(
+            0,
+            weight=1
+        )
+
+        frame.grid_columnconfigure(
+            0,
+            weight=1
+        )
+
+        # =====================================================
+        # CABEÇALHOS
+        # =====================================================
+
+        nomes_colunas = {
+            "id": "ID",
+            "referencia": "Referência",
+            "regiao": "Região",
+            "nif": "NIF",
+            "titulo": "Título",
+            "assunto": "Assunto",
+            "departamento": "Departamento",
+            "tipo": "Tipo",
+            "data_documento": "Data",
+            "nome_ficheiro": "Ficheiro",
+            "tamanho": "Tamanho"
+        }
 
         for nome, largura in colunas:
-            tree.heading(nome, text=nome.replace("_", " ").title())
-            tree.column(nome, width=largura)
+
+            tree.heading(
+                nome,
+                text=nomes_colunas.get(
+                    nome,
+                    nome.replace("_", " ").title()
+                )
+            )
+
+            tree.column(
+                nome,
+                width=largura,
+                anchor="w"
+            )
+
+        # =====================================================
+        # INSERIR RESULTADOS
+        # =====================================================
 
         for doc in documentos:
+
             valores = [
                 doc["id"],
                 doc["referencia"],
-                doc["titulo"],
+                doc["regiao"] or "",
+                doc["nif"] or "",
+                doc["titulo"] or "",
                 doc["assunto"] or "",
-                doc["departamento"],
-                doc["tipo"],
-                str(doc["data_documento"]),
-                doc["nome_ficheiro"],
-                format_size(doc["tamanho_bytes"])
+                doc["departamento"] or "",
+                doc["tipo"] or "",
+                str(doc["data_documento"])
+                if doc["data_documento"]
+                else "",
+                doc["nome_ficheiro"] or "",
+                format_size(
+                    doc["tamanho_bytes"]
+                )
             ]
-            tree.insert("", "end", iid=str(doc["id"]), values=valores)
+
+            tree.insert(
+                "",
+                "end",
+                iid=str(doc["id"]),
+                values=valores
+            )
+
+        # =====================================================
+        # DUPLO CLIQUE
+        # =====================================================
 
         tree.bind(
             "<Double-1>",
             lambda e: self.abrir_documento_selecionado(tree)
         )
 
+        # =====================================================
+        # BOTÃO ABRIR
+        # =====================================================
+
         ctk.CTkButton(
             self.resultados_frame,
             text="👁️ Abrir documento selecionado",
+            height=40,
             command=lambda: self.abrir_documento_selecionado(tree)
-        ).pack(anchor="e", padx=10, pady=10)
+        ).pack(
+            anchor="e",
+            padx=10,
+            pady=10
+        )
 
     def abrir_documento_selecionado(self, tree):
         selecionado = tree.selection()
@@ -1304,21 +2056,51 @@ class ArquivoDigitalApp(ctk.CTk):
             topo,
             text=(
                 f"Referência: {processo['referencia']}    |    "
+                f"Região: {processo['regiao'] or '-'}    |    "
                 f"Departamento: {processo['departamento']}    |    "
                 f"Tipo: {processo['tipo']}"
             )
-        ).pack(anchor="w", padx=15, pady=(0, 12))
+        ).pack(
+            anchor="w",
+            padx=15,
+            pady=(0, 12)
+        )
 
         info = ctk.CTkFrame(janela)
         info.pack(fill="x", padx=15, pady=5)
 
         dados = [
-            ("Data", processo["data_documento"]),
-            ("Organização", f"{processo['ano']}/{processo['mes']:02d}"),
-            ("Inserido por", processo["criado_por_nome"]),
-            ("Ficheiro", processo["nome_ficheiro"]),
-            ("Tamanho", format_size(processo["tamanho_bytes"])),
-        ]
+        (
+            "Região",
+            processo["regiao"] or ""
+        ),
+        (
+            "NIF",
+            processo["nif"] or ""
+        ),
+        (
+            "Data",
+            processo["data_documento"]
+        ),
+        (
+            "Organização",
+            f"{processo['ano']}/{processo['mes']:02d}"
+        ),
+        (
+            "Inserido por",
+            processo["criado_por_nome"]
+        ),
+        (
+            "Ficheiro",
+            processo["nome_ficheiro"]
+        ),
+        (
+            "Tamanho",
+            format_size(
+                processo["tamanho_bytes"]
+            )
+        ),
+    ]
 
         for i, (campo, valor) in enumerate(dados):
             ctk.CTkLabel(
