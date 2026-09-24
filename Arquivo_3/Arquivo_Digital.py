@@ -16,7 +16,7 @@ from db import get_connection, fetch_all, fetch_one, execute
 
 
 # =========================================================
-# CONFIGURAÇÃO
+# CONFIGURAÇÃO0
 # =========================================================
 
 ctk.set_appearance_mode("Dark")
